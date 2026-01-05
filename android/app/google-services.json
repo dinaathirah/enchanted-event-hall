@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "445485182670",
+    "project_id": "enchanted-event-hall-99f99",
+    "storage_bucket": "enchanted-event-hall-99f99.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:445485182670:android:b8946b2b486d2d14136a9f",
+        "android_client_info": {
+          "package_name": "com.example.enchanted_event_hall"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC2YsmefpaZ09CWGlCK1Dlw7xuFtMenha8"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
