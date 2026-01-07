@@ -173,7 +173,7 @@ class ManageBookingsPage extends StatelessWidget {
     );
   }
 
-  // 🔄 UPDATE STATUS
+  //  UPDATE STATUS
   static Future<void> _updateStatus(
       String bookingId,
       String status,

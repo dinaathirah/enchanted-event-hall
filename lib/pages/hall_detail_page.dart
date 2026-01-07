@@ -25,9 +25,7 @@ class HallDetailPage extends StatelessWidget {
           ),
         ),
         centerTitle: true,
-        iconTheme: const IconThemeData(
-          color: Color(0xFF8E7CC3),
-        ),
+        iconTheme: const IconThemeData(color: Color(0xFF8E7CC3)),
       ),
 
       body: StreamBuilder<DocumentSnapshot>(
@@ -41,6 +39,7 @@ class HallDetailPage extends StatelessWidget {
           }
 
           final hall = snapshot.data!.data() as Map<String, dynamic>;
+          final List amenities = hall['amenities'] ?? [];
 
           return SingleChildScrollView(
             padding: const EdgeInsets.all(20),
@@ -63,22 +62,66 @@ class HallDetailPage extends StatelessWidget {
 
                 const SizedBox(height: 18),
 
+                // NAME
                 Text(
                   hall['name'],
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
-                    fontSize: 20,
+                    fontSize: 22,
                     color: Color(0xFF6A4E90),
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 Text("Capacity: ${hall['capacity']} pax"),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 Text("RM ${hall['price']} / day"),
 
-                const SizedBox(height: 30),
+                const SizedBox(height: 24),
 
+                // DESCRIPTION
+                const Text(
+                  "Description",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  hall['description'] ?? "No description available.",
+                  style: const TextStyle(color: Colors.black87),
+                ),
+
+                const SizedBox(height: 24),
+
+                // AMENITIES
+                const Text(
+                  "Amenities",
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 10),
+
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 8,
+                  children: amenities.map<Widget>((item) {
+                    return Chip(
+                      label: Text(item),
+                      backgroundColor:
+                      const Color(0xFF8E7CC3).withOpacity(0.15),
+                      labelStyle:
+                      const TextStyle(color: Color(0xFF6A4E90)),
+                    );
+                  }).toList(),
+                ),
+
+                const SizedBox(height: 32),
+
+                // BOOK BUTTON
                 SizedBox(
                   width: double.infinity,
                   height: 48,

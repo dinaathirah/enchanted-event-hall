@@ -25,10 +25,20 @@ class _DateTimePageState extends State<DateTimePage> {
   String? selectedSlot;
   bool isChecking = false;
 
+  /// 🔑 SINGLE SOURCE OF TRUTH (24 HOURS)
   final Map<String, Map<String, String>> timeSlots = {
-    'morning': {'label': 'Morning', 'time': '9:00 AM – 1:00 PM'},
-    'afternoon': {'label': 'Afternoon', 'time': '2:00 PM – 6:00 PM'},
-    'evening': {'label': 'Evening', 'time': '7:00 PM – 11:00 PM'},
+    'morning': {
+      'label': 'Morning',
+      'time': '09:00 - 13:00',
+    },
+    'afternoon': {
+      'label': 'Afternoon',
+      'time': '14:00 - 18:00',
+    },
+    'evening': {
+      'label': 'Evening',
+      'time': '19:00 - 23:00',
+    },
   };
 
   Future<void> pickDate() async {
@@ -43,7 +53,6 @@ class _DateTimePageState extends State<DateTimePage> {
       setState(() => selectedDate = picked);
     }
   }
-
 
   Future<bool> isSlotAvailable(String date, String slot) async {
     final snapshot = await FirebaseFirestore.instance
@@ -93,7 +102,7 @@ class _DateTimePageState extends State<DateTimePage> {
           capacity: widget.capacity,
           price: widget.price,
           date: dateString,
-          timeSlot: selectedSlot!,
+          timeSlot: selectedSlot!, // morning / afternoon / evening
         ),
       ),
     );
@@ -111,7 +120,9 @@ class _DateTimePageState extends State<DateTimePage> {
           color: isSelected ? const Color(0xFFEDE7F6) : Colors.white,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected ? const Color(0xFF8E7CC3) : Colors.grey.shade300,
+            color: isSelected
+                ? const Color(0xFF8E7CC3)
+                : Colors.grey.shade300,
           ),
         ),
         child: Column(
@@ -122,7 +133,7 @@ class _DateTimePageState extends State<DateTimePage> {
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 4),
-            Text(timeSlots[slot]!['time']!),
+            Text(timeSlots[slot]!['time']!), // 24 HOURS DISPLAY
           ],
         ),
       ),
@@ -136,7 +147,7 @@ class _DateTimePageState extends State<DateTimePage> {
       appBar: AppBar(
         backgroundColor: const Color(0xFFFCE4EC),
         title: const Text(
-          "Select Time",
+          "Select Date & Time",
           style: TextStyle(color: Color(0xFF8E7CC3)),
         ),
         centerTitle: true,
@@ -152,7 +163,7 @@ class _DateTimePageState extends State<DateTimePage> {
               title: Text(
                 selectedDate == null
                     ? "Select Date"
-                    : selectedDate!.toString().split(' ')[0],
+                    : selectedDate!.toIso8601String().split('T')[0],
               ),
               onTap: pickDate,
             ),

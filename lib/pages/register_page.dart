@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class RegisterPage extends StatefulWidget {
   const RegisterPage({super.key});
@@ -152,22 +153,41 @@ class _RegisterPageState extends State<RegisterPage> {
                             }
 
                             try {
+                              // 1. Create user in Firebase Auth
+                              UserCredential userCredential =
                               await FirebaseAuth.instance.createUserWithEmailAndPassword(
                                 email: emailCtrl.text.trim(),
                                 password: passwordCtrl.text.trim(),
                               );
 
+                              final uid = userCredential.user!.uid;
+
+                              // 2. Save user info to Firestore
+                              await FirebaseFirestore.instance
+                                  .collection('users')
+                                  .doc(uid)
+                                  .set({
+                                'name': nameCtrl.text.trim(),
+                                'email': emailCtrl.text.trim(),
+                                'phone': phoneCtrl.text.trim(),
+                                'role': 'user',
+                                'status': 'active',
+                                'createdAt': FieldValue.serverTimestamp(),
+                              });
+
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(content: Text('Account created successfully')),
                               );
 
-                              Navigator.pop(context); // balik ke login
+                              Navigator.pop(context); // back to login
                             } on FirebaseAuthException catch (e) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(content: Text(e.message ?? 'Registration failed')),
                               );
                             }
                           },
+
+
 
                           child: const Text(
                             'Register',
