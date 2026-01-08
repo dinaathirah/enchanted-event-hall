@@ -85,7 +85,6 @@ class _AddOnServicesPageState extends State<AddOnServicesPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFDF2F6),
-
       appBar: AppBar(
         backgroundColor: const Color(0xFFFCE4EC),
         elevation: 1,
@@ -99,10 +98,8 @@ class _AddOnServicesPageState extends State<AddOnServicesPage> {
           ),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.all(16),
-
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -112,9 +109,9 @@ class _AddOnServicesPageState extends State<AddOnServicesPage> {
                 style: TextStyle(color: Colors.grey),
               ),
             ),
-
             const SizedBox(height: 16),
 
+            /// LIST OF ADD-ONS
             Expanded(
               child: ListView.builder(
                 itemCount: addOns.length,
@@ -129,7 +126,6 @@ class _AddOnServicesPageState extends State<AddOnServicesPage> {
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(color: Colors.grey.shade300),
                     ),
-
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -140,9 +136,7 @@ class _AddOnServicesPageState extends State<AddOnServicesPage> {
                             setState(() => item["selected"] = val!);
                           },
                         ),
-
                         const SizedBox(width: 4),
-
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
@@ -165,7 +159,6 @@ class _AddOnServicesPageState extends State<AddOnServicesPage> {
                             ],
                           ),
                         ),
-
                         Text(
                           "RM ${item["price"].toStringAsFixed(2)}",
                           style: const TextStyle(
@@ -182,6 +175,7 @@ class _AddOnServicesPageState extends State<AddOnServicesPage> {
 
             const SizedBox(height: 10),
 
+            /// SUMMARY
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -200,15 +194,16 @@ class _AddOnServicesPageState extends State<AddOnServicesPage> {
 
             const SizedBox(height: 16),
 
+            /// ▶ CONTINUE WITH SELECTED ADD-ONS
             ElevatedButton(
               onPressed: () {
                 final selectedServices =
                 addOns.where((s) => s["selected"] == true).toList();
 
-                Navigator.push(
+                Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => BookingSummaryPage(
+                    builder: (_) => BookingSummaryPage(
                       hallId: widget.hallId,
                       hallName: widget.hallName,
                       capacity: widget.capacity,
@@ -229,8 +224,24 @@ class _AddOnServicesPageState extends State<AddOnServicesPage> {
 
             const SizedBox(height: 8),
 
+            /// ⏭ SKIP ADD-ONS (FIXED)
             OutlinedButton(
-              onPressed: () => Navigator.pop(context),
+              onPressed: () {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => BookingSummaryPage(
+                      hallId: widget.hallId,
+                      hallName: widget.hallName,
+                      capacity: widget.capacity,
+                      hallPrice: widget.price,
+                      date: widget.date,
+                      timeSlot: widget.timeSlot,
+                      selectedAddOns: const [], // ⬅️ EMPTY ADD-ONS
+                    ),
+                  ),
+                );
+              },
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Color(0xFF8E7CC3)),
                 minimumSize: const Size(double.infinity, 48),

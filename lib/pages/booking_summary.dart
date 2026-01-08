@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'edit_booking.dart';
 
-class BookingSummaryPage extends StatelessWidget {
+import 'edit_booking.dart';
+import 'booking_confirmation.dart';
+
+class BookingSummaryPage extends StatefulWidget {
   final String hallId;
   final String hallName;
   final int capacity;
@@ -23,24 +25,42 @@ class BookingSummaryPage extends StatelessWidget {
     required this.selectedAddOns,
   });
 
-  /// 🔑 SINGLE SOURCE OF TRUTH (24 HOURS)
+  @override
+  State<BookingSummaryPage> createState() => _BookingSummaryPageState();
+}
+
+class _BookingSummaryPageState extends State<BookingSummaryPage> {
+  late String date;
+  late String timeSlot;
+  late List<Map<String, dynamic>> selectedAddOns;
+
+  /// SINGLE SOURCE OF TRUTH
   static const Map<String, Map<String, String>> timeSlots = {
     'morning': {'start': '09:00', 'end': '13:00'},
     'afternoon': {'start': '14:00', 'end': '18:00'},
     'evening': {'start': '19:00', 'end': '23:00'},
   };
 
-  String get startTime => timeSlots[timeSlot]?['start'] ?? '-';
-  String get endTime => timeSlots[timeSlot]?['end'] ?? '-';
+  @override
+  void initState() {
+    super.initState();
+    date = widget.date;
+    timeSlot = widget.timeSlot;
+    selectedAddOns = List<Map<String, dynamic>>.from(widget.selectedAddOns);
+  }
+
+  String get startTime => timeSlots[timeSlot]!['start']!;
+  String get endTime => timeSlots[timeSlot]!['end']!;
 
   double get addOnTotal =>
       selectedAddOns.fold(0.0, (s, a) => s + (a['price'] ?? 0));
 
-  double get subtotal => hallPrice + addOnTotal;
+  double get subtotal => widget.hallPrice + addOnTotal;
   double get tax => subtotal * 0.06;
   double get total => subtotal + tax;
 
-  Future<void> _confirmBooking(BuildContext context) async {
+  /// 🔑 CONFIRM BOOKING (STATUS = PENDING)
+  Future<void> _confirmBooking() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
@@ -48,9 +68,10 @@ class BookingSummaryPage extends StatelessWidget {
     await FirebaseFirestore.instance.collection('bookings').add({
       'userId': user.uid,
       'userEmail': user.email,
-      'hallId': hallId,
-      'hallName': hallName,
-      'hallPrice': hallPrice,
+      'hallId': widget.hallId,
+      'hallName': widget.hallName,
+      'hallPrice': widget.hallPrice,
+      'capacity': widget.capacity,
       'bookingDate': date,
       'timeSlot': timeSlot,
       'startTime': startTime,
@@ -60,20 +81,20 @@ class BookingSummaryPage extends StatelessWidget {
       'subtotal': subtotal,
       'tax': tax,
       'totalPrice': total,
+
+      // 🔴 FIX UTAMA: ADMIN APPROVAL REQUIRED
       'status': 'pending',
+
       'createdAt': FieldValue.serverTimestamp(),
     });
+
+    if (!mounted) return;
 
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(
-        builder: (_) => EditBookingPage(
+        builder: (_) => BookingConfirmationPage(
           bookingId: docRef.id,
-          hallName: hallName,
-          hallPrice: hallPrice,
-          date: date,
-          timeSlot: timeSlot,
-          addOns: selectedAddOns,
         ),
       ),
     );
@@ -93,38 +114,85 @@ class BookingSummaryPage extends StatelessWidget {
         child: Column(
           children: [
             _card("Event Hall", [
-              _row("Hall", hallName),
-              _row("Capacity", "$capacity guests"),
+              _row("Hall", widget.hallName),
+              _row("Capacity", "${widget.capacity} guests"),
             ]),
+
             _card("Date & Time", [
               _row("Date", date),
               _row("Time", "$startTime - $endTime"),
             ]),
-            if (selectedAddOns.isNotEmpty)
-              _card(
-                "Add-on Services",
-                selectedAddOns
-                    .map((a) => _row(
-                  a['name'] ?? '-',
-                  "RM ${a['price'] ?? 0}",
-                ))
-                    .toList(),
-              ),
+
+            _card(
+              "Add-on Services",
+              selectedAddOns.isEmpty
+                  ? [_row("-", "RM 0.00")]
+                  : selectedAddOns
+                  .map(
+                    (a) => _row(
+                  a['name'] ?? "-",
+                  "RM ${a['price']}",
+                ),
+              )
+                  .toList(),
+            ),
+
             _card("Price Summary", [
-              _row("Hall Rental", "RM $hallPrice"),
+              _row("Hall Rental", "RM ${widget.hallPrice}"),
               _row("Add-ons", "RM ${addOnTotal.toStringAsFixed(2)}"),
               const Divider(),
               _row("Subtotal", "RM ${subtotal.toStringAsFixed(2)}"),
               _row("Tax (6%)", "RM ${tax.toStringAsFixed(2)}"),
               const Divider(),
-              _row("Total", "RM ${total.toStringAsFixed(2)}", bold: true),
+              _row(
+                "Total",
+                "RM ${total.toStringAsFixed(2)}",
+                bold: true,
+              ),
             ]),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 24),
+
+            /// ✏️ EDIT BOOKING
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton(
+                onPressed: () async {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditBookingPage(
+                        hallName: widget.hallName,
+                        hallPrice: widget.hallPrice,
+                        date: date,
+                        timeSlot: timeSlot,
+                        addOns: selectedAddOns,
+                      ),
+                    ),
+                  );
+
+                  if (result != null) {
+                    setState(() {
+                      date = result['date'];
+                      timeSlot = result['timeSlot'];
+                      selectedAddOns =
+                      List<Map<String, dynamic>>.from(result['addOns']);
+                    });
+                  }
+                },
+                child: const Text("Edit Booking"),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            /// ✅ CONFIRM BOOKING
             SizedBox(
               width: double.infinity,
               height: 48,
               child: ElevatedButton(
-                onPressed: () => _confirmBooking(context),
+                onPressed: _confirmBooking,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF8E7CC3),
                 ),
@@ -137,6 +205,8 @@ class BookingSummaryPage extends StatelessWidget {
     );
   }
 
+  /// ---------- UI HELPERS ----------
+
   Widget _card(String title, List<Widget> children) => Container(
     margin: const EdgeInsets.only(bottom: 16),
     padding: const EdgeInsets.all(16),
@@ -147,9 +217,11 @@ class BookingSummaryPage extends StatelessWidget {
     child: Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title,
-            style:
-            const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        Text(
+          title,
+          style:
+          const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
         const SizedBox(height: 12),
         ...children,
       ],
@@ -164,7 +236,9 @@ class BookingSummaryPage extends StatelessWidget {
         Text(left),
         Text(
           right,
-          style: TextStyle(fontWeight: bold ? FontWeight.bold : null),
+          style: TextStyle(
+            fontWeight: bold ? FontWeight.bold : null,
+          ),
         ),
       ],
     ),

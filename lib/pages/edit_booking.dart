@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'cancel_booking_page.dart';
 
 class EditBookingPage extends StatefulWidget {
-  final String bookingId;
   final String hallName;
   final int hallPrice;
   final String date;
@@ -12,7 +9,6 @@ class EditBookingPage extends StatefulWidget {
 
   const EditBookingPage({
     super.key,
-    required this.bookingId,
     required this.hallName,
     required this.hallPrice,
     required this.date,
@@ -32,14 +28,12 @@ class _EditBookingPageState extends State<EditBookingPage> {
   final List<String> timeSlots = ['morning', 'afternoon', 'evening'];
 
   final List<Map<String, dynamic>> allAddOns = [
-    {"id": "sound_system", "name": "Premium Sound System", "price": 800},
+    {"id": "sound", "name": "Premium Sound System", "price": 800},
     {"id": "lighting", "name": "LED Stage Lighting", "price": 1200},
     {"id": "projector", "name": "Projector & Screen", "price": 500},
     {"id": "floral", "name": "Floral Decoration", "price": 1500},
-    {"id": "photography", "name": "Photography", "price": 2000},
+    {"id": "photo", "name": "Photography", "price": 2000},
     {"id": "catering", "name": "Catering Service", "price": 3500},
-    {"id": "table_chair", "name": "Table & Chair Setup", "price": 600},
-    {"id": "red_carpet", "name": "Red Carpet & Backdrop", "price": 400},
   ];
 
   @override
@@ -50,33 +44,15 @@ class _EditBookingPageState extends State<EditBookingPage> {
     selectedAddOns = List<Map<String, dynamic>>.from(widget.addOns);
   }
 
-  bool _checked(Map<String, dynamic> addOn) =>
+  bool _isChecked(Map<String, dynamic> addOn) =>
       selectedAddOns.any((a) => a['id'] == addOn['id']);
 
-  double get addOnTotal =>
-      selectedAddOns.fold(0.0, (s, a) => s + (a['price'] ?? 0));
-
-  double get subtotal => widget.hallPrice + addOnTotal;
-  double get tax => subtotal * 0.06;
-  double get total => subtotal + tax;
-
-  Future<void> _save() async {
-    await FirebaseFirestore.instance
-        .collection('bookings')
-        .doc(widget.bookingId)
-        .update({
-      'bookingDate': selectedDate.toIso8601String().split('T')[0],
+  void _saveChanges() {
+    Navigator.pop(context, {
+      'date': selectedDate.toIso8601String().split('T')[0],
       'timeSlot': selectedTimeSlot,
       'addOns': selectedAddOns,
-      'addOnTotal': addOnTotal,
-      'subtotal': subtotal,
-      'tax': tax,
-      'totalPrice': total,
-      'updatedAt': FieldValue.serverTimestamp(),
     });
-
-    if (!mounted) return;
-    Navigator.pop(context);
   }
 
   @override
@@ -93,13 +69,22 @@ class _EditBookingPageState extends State<EditBookingPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            /// HALL (READ ONLY)
             const Text("Event Hall"),
+            const SizedBox(height: 6),
             TextFormField(
               initialValue: widget.hallName,
               readOnly: true,
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+              ),
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 20),
+
+            /// DATE
             const Text("Date"),
+            const SizedBox(height: 6),
             InkWell(
               onTap: () async {
                 final picked = await showDatePicker(
@@ -108,55 +93,88 @@ class _EditBookingPageState extends State<EditBookingPage> {
                   firstDate: DateTime.now(),
                   lastDate: DateTime(2030),
                 );
-                if (picked != null) setState(() => selectedDate = picked);
+                if (picked != null) {
+                  setState(() => selectedDate = picked);
+                }
               },
-              child: Text(selectedDate.toIso8601String().split('T')[0]),
+              child: Container(
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child:
+                Text(selectedDate.toIso8601String().split('T')[0]),
+              ),
             ),
-            const SizedBox(height: 16),
+
+            const SizedBox(height: 20),
+
+            /// TIME SLOT
             const Text("Time Slot"),
+            const SizedBox(height: 6),
             DropdownButtonFormField<String>(
               value: selectedTimeSlot,
               items: timeSlots
-                  .map((t) =>
-                  DropdownMenuItem(value: t, child: Text(t.toUpperCase())))
+                  .map(
+                    (t) => DropdownMenuItem(
+                  value: t,
+                  child: Text(t.toUpperCase()),
+                ),
+              )
                   .toList(),
               onChanged: (v) => setState(() => selectedTimeSlot = v!),
+              decoration: const InputDecoration(
+                border: OutlineInputBorder(),
+              ),
             ),
-            const SizedBox(height: 20),
+
+            const SizedBox(height: 24),
+
+            /// ADD-ON SERVICES
             const Text("Add-on Services"),
-            ...allAddOns.map((a) => CheckboxListTile(
-              value: _checked(a),
-              title: Text(a['name']),
-              secondary: Text("RM ${a['price']}"),
-              onChanged: (val) {
-                setState(() {
-                  if (val == true) {
-                    selectedAddOns.add(a);
-                  } else {
-                    selectedAddOns
-                        .removeWhere((x) => x['id'] == a['id']);
-                  }
-                });
-              },
-            )),
-            const SizedBox(height: 20),
-            Text("Total: RM ${total.toStringAsFixed(2)}"),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _save,
-              child: const Text("Save Changes"),
+            const SizedBox(height: 8),
+
+            ...allAddOns.map(
+                  (a) => CheckboxListTile(
+                value: _isChecked(a),
+                title: Text(a['name']),
+                secondary: Text("RM ${a['price']}"),
+                onChanged: (val) {
+                  setState(() {
+                    if (val == true) {
+                      selectedAddOns.add(a);
+                    } else {
+                      selectedAddOns
+                          .removeWhere((x) => x['id'] == a['id']);
+                    }
+                  });
+                },
+              ),
             ),
-            OutlinedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        CancelBookingPage(bookingId: widget.bookingId),
-                  ),
-                );
-              },
-              child: const Text("Cancel Booking"),
+
+            const SizedBox(height: 30),
+
+            /// SAVE BUTTON
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: ElevatedButton(
+                onPressed: _saveChanges,
+                child: const Text("Save Changes"),
+              ),
+            ),
+
+            const SizedBox(height: 12),
+
+            /// BACK / DISCARD
+            SizedBox(
+              width: double.infinity,
+              height: 48,
+              child: OutlinedButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text("Back"),
+              ),
             ),
           ],
         ),
